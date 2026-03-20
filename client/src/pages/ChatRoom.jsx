@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
+import { userService } from '../api/userService';
 import Loader from '../components/Loader';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Trash2, ShieldBan } from 'lucide-react';
 import './Chat.css';
 
 const ChatRoom = () => {
@@ -68,6 +69,33 @@ const ChatRoom = () => {
     return () => unsubscribe();
   }, [chatId]);
 
+  const handleDeleteChat = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete this chat? This action cannot be undone.")) return;
+    try {
+      await deleteDoc(doc(db, 'chats', chatId));
+      navigate('/chats');
+    } catch (err) {
+      console.error("Error deleting chat:", err);
+      alert("Failed to delete chat. Check permissions.");
+    }
+  };
+
+  const handleBlockUser = async () => {
+    const otherUserId = chatInfo.users.find(id => id !== currentUser.uid);
+    if (!otherUserId) return;
+    
+    if (!window.confirm("Are you sure you want to block this user? They will be banned from ever claiming your items again.")) return;
+    
+    try {
+      await userService.blockUser(otherUserId);
+      alert("User successfully blocked.");
+      navigate('/chats');
+    } catch (err) {
+      console.error("Error blocking user:", err);
+      alert(err.response?.data?.message || "Failed to block user.");
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -91,15 +119,26 @@ const ChatRoom = () => {
   return (
     <div className="container page-wrapper">
       <div className="chat-room-container">
-        <div className="chat-header">
-          <button onClick={() => navigate('/chats')} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.1rem' }}>
-              {chatInfo?.itemTitle ? `Chat: ${chatInfo.itemTitle}` : 'Loading...'}
-            </h2>
-            <small style={{ color: 'var(--text-muted)' }}>Secure 1-on-1 session</small>
+        <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button onClick={() => navigate('/chats')} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none', marginRight: '0.5rem' }}>
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', marginBottom: '0.1rem' }}>
+                {chatInfo?.itemTitle ? `Chat: ${chatInfo.itemTitle}` : 'Loading...'}
+              </h2>
+              <small style={{ color: 'var(--text-muted)' }}>Secure 1-on-1 session</small>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={handleBlockUser} className="btn btn-outline" style={{ padding: '0.4rem', color: 'var(--text-muted)', border: '1px solid var(--border)' }} title="Block User">
+              <ShieldBan size={18} />
+            </button>
+            <button onClick={handleDeleteChat} className="btn btn-outline" style={{ padding: '0.4rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} title="Delete Chat">
+              <Trash2 size={18} />
+            </button>
           </div>
         </div>
 

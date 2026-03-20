@@ -156,6 +156,15 @@ exports.updateItem = async (req, res, next) => {
 
     // Handle new image upload
     if (req.file) {
+      if (item.imageUrl) {
+        try {
+          const publicId = item.imageUrl.split('/').slice(-2).join('/').split('.')[0];
+          const { cloudinary } = require('../config/cloudinary');
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.error('Failed to delete old image from Cloudinary:', err);
+        }
+      }
       item.imageUrl = req.file.path;
     }
 
@@ -190,6 +199,17 @@ exports.deleteItem = async (req, res, next) => {
         success: false,
         message: 'Not authorized to delete this item',
       });
+    }
+
+    // Delete image from Cloudinary
+    if (item.imageUrl) {
+      try {
+        const publicId = item.imageUrl.split('/').slice(-2).join('/').split('.')[0];
+        const { cloudinary } = require('../config/cloudinary');
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.error('Failed to delete image from Cloudinary:', err);
+      }
     }
 
     await item.deleteOne();

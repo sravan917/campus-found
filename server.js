@@ -12,6 +12,7 @@ const itemRoutes = require('./routes/itemRoutes');
 const claimRoutes = require('./routes/claimRoutes');
 const matchRoutes = require('./routes/matchRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Initialize Express
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 // --------------- Error Handler ---------------
 app.use(errorHandler);

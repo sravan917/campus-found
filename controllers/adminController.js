@@ -42,6 +42,17 @@ exports.deleteItem = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
 
+    // Delete image from Cloudinary
+    if (item.imageUrl) {
+      try {
+        const publicId = item.imageUrl.split('/').slice(-2).join('/').split('.')[0];
+        const { cloudinary } = require('../config/cloudinary');
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.error('Failed to delete image from Cloudinary:', err);
+      }
+    }
+
     await item.deleteOne();
 
     res.status(200).json({

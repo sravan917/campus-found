@@ -53,6 +53,8 @@ const ItemDetails = () => {
       
       if (status === 'approved') {
         setItem({ ...item, status: 'resolved' });
+      } else if (status === 'rejected') {
+        setItem({ ...item, status: 'open' });
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update claim.');
@@ -200,6 +202,21 @@ const ItemDetails = () => {
                       {claim.status === 'rejected' && (
                         <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--danger)' }}>
                           You have rejected this claim.
+                        </div>
+                      )}
+                      
+                      {claim.status === 'approved' && (
+                        <div style={{ marginTop: '1rem' }}>
+                          <button 
+                            onClick={() => handleClaimAction(claim._id, 'rejected')} 
+                            className="btn btn-outline" 
+                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                          >
+                            <XCircle size={16} /> Revoke Approval
+                          </button>
+                          <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                            Revoking this will instantly re-open the post for new claims and delete your chat room with this user.
+                          </p>
                         </div>
                       )}
                     </div>

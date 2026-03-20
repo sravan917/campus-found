@@ -25,7 +25,7 @@ const Navbar = () => {
       <div className="container nav-content">
         <Link to="/" className="brand">
           <PackageSearch size={28} color="var(--primary)" />
-          <span>CampusFound</span>
+          <span>ReclaimX</span>
         </Link>
         
         <div className="nav-links">

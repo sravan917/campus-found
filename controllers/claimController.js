@@ -25,6 +25,13 @@ exports.createClaim = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
     }
 
+    // Check if claimant is blocked by the owner
+    const User = require('../models/User'); // Import User model inline
+    const owner = await User.findOne({ userId: item.postedBy });
+    if (owner && owner.blockedUsers && owner.blockedUsers.includes(req.user.uid)) {
+      return res.status(403).json({ success: false, message: 'You have been blocked by this user.' });
+    }
+
     // Prevent duplicate pending claims
     const existing = await Claim.findOne({
       itemId,
@@ -116,7 +123,7 @@ exports.updateClaimStatus = async (req, res, next) => {
     claim.status = status;
     await claim.save();
 
-    // If approved, mark the item as resolved
+    // Auto-resolve item or auto-reopen on rollback
     if (status === 'approved') {
       item.status = 'resolved';
       await item.save();
@@ -136,7 +143,21 @@ exports.updateClaimStatus = async (req, res, next) => {
         }, { merge: true });
       } catch (chatErr) {
         console.error("Failed to provision Firestore Chat:", chatErr);
-        // We don't throw next(err) here to avoid breaking the Mongo transaction
+      }
+    } else if (status === 'rejected') {
+      item.status = 'open';
+      await item.save();
+
+      // Automatically delete the Firestore Chat Room if revoked
+      try {
+        const admin = getAdmin();
+        const db = admin.firestore();
+        const chatId = `${item._id}_${claim.claimantId}`;
+        const chatRef = db.collection('chats').doc(chatId);
+        
+        await chatRef.delete();
+      } catch (chatErr) {
+        console.error("Failed to delete Firestore Chat:", chatErr);
       }
     }
 
